@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Voice Emotion Analyzer</title>
+</head>
+<body>
+  <h1>🎙️ Voice Emotion Analyzer</h1>
+  <button onclick="startRecognition()">Talk</button>
+  <p id="output">Text: (waiting for input)</p>
+  <p id="emotion">Emotions: -</p>
+
+  <script>
+    async function analyzeText(text) {
+      try {
+        const res = await fetch('/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text })
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        console.log("📊 Result:", data);
+
+        document.getElementById('emotion').textContent =
+          "Emotions: " + data.map(d => `${d.label} (${(d.score * 100).toFixed(1)}%)`).join(', ');
+      } catch (err) {
+        console.error("❌ Error analyzing:", err);
+        document.getElementById('emotion').textContent = "❌ Error analyzing emotions";
+      }
+    }
+
+    function startRecognition() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = 'en-GB';
+      recognition.interimResults = false;
+
+      recognition.onresult = (event) => {
+        const text = event.results[0][0].transcript;
+        document.getElementById('output').textContent = `Text: "${text}"`;
+        analyzeText(text);
+      };
+
+      recognition.onerror = (event) => {
+        document.getElementById('output').textContent = `Error: ${event.error}`;
+      };
+
+      recognition.start();
+    }
+  </script>
+</body>
+</html>
